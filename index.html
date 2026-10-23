@@ -341,7 +341,9 @@ function renderEaResults(parsed,fileName,sheetCount,year){
     parsed.simple.forEach(function(s){
       var accs=(s.accounts||[]).map(function(a){return escHtml(ACCOUNT_META[a.key]||a.key)+' '+fmtMoney(a.value);}).join('；');
       var disp=s.disposition==='merged'
-        ?('已按「本期」并入 '+escHtml(String(s.year))+' 年（仅补缺，不覆盖结构化报表）')
+        ?(s.yearFrom==='label'
+          ?('已按表内/表名标注并入 '+escHtml(String(s.year))+' 年（仅补缺）')
+          :('已按「本期」并入 '+escHtml(String(s.year))+' 年（假设，仅补缺）'))
         :'未并入：工作簿含多个年度，年份不明';
       h+='<tr><td>'+escHtml(s.name)+'</td><td>'+accs+'</td><td>'+disp+'</td></tr>';
     });
@@ -350,7 +352,7 @@ function renderEaResults(parsed,fileName,sheetCount,year){
   h+='<div class="card" style="margin-top:10px"><div class="hdh">🗂️ 识别到的工作表</div><table class="tbl"><tr><th>工作表</th><th>类型</th><th>年份</th><th>单位</th><th>说明</th></tr>';
   var stmtLabel={balance:'资产负债表',income:'利润表',tax:'税局比对',detail:'明细表',other:'其他'};
   (parsed.detected||[]).forEach(function(x){
-    var unitTxt=escHtml(x.unit||'元')+(x.unitExplicit===false?'（未标注）':'');
+    var unitTxt=escHtml(x.unit||'元')+(x.unitUnsupported?'（'+escHtml(x.unitUnsupported)+' 不支持，按元计）':(x.unitExplicit===false?'（未标注）':''));
     h+='<tr><td>'+escHtml(x.name)+'</td><td>'+(stmtLabel[x.statement]||x.statement)+'</td><td>'+(x.year||'—')+'</td><td>'+unitTxt+'</td><td>'+escHtml(x.note||'')+'</td></tr>';
   });
   h+='</table></div>';
