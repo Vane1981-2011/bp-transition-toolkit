@@ -285,6 +285,14 @@ function renderEaResults(parsed,fileName,sheetCount,year){
   if(years.length>1){
     h+='<div class="res" style="margin:0"><label class="l">分析年份：<select id="eaYear">'+years.map(function(y){return '<option value="'+y+'"'+(y===year?' selected':'')+'>'+_eaYearLabel(y)+'</option>';}).join('')+'</select></label></div>';
   }
+  // 💱 单位提示：任一表非「元」或存在混合单位时，明确告知已按什么口径换算（不得静默混用）
+  var ui=parsed.unitInfo;
+  if(ui&&(ui.mixed||(ui.units||[]).some(function(u){return u!=='元';}))){
+    var uParts=(ui.used&&ui.used.length?ui.used:ui.sheets||[]).map(function(x){
+      return escHtml(x.name)+'= '+escHtml(x.unit)+(x.explicit===false?'（未标注）':'');
+    }).join('；');
+    h+='<div class="res" style="margin:0;border-color:#93c5fd;background:#eff6ff"><div class="r" style="font-size:12px">💱 已统一换算为元</div><div class="l">'+uParts+'</div><div class="l">换算口径：万元 × 10000、千元 × 1000；表内未标注单位时按元计。</div></div>';
+  }
   var hasBS=isFinite(d.totalAssets)&&isFinite(d.totalLiabilities);
   var ratioHtml='';
   if(hasBS){
@@ -299,7 +307,7 @@ function renderEaResults(parsed,fileName,sheetCount,year){
     if(d[k]===undefined||!isFinite(d[k])) return;
     any=true;
     var s=src[k];
-    h+='<div class="l">'+fmtAccount(k,d[k])+(s?' <span style="color:#64748b">（'+escHtml(s.sheet)+'!'+escHtml(s.cell)+(s.column?'·'+escHtml(s.column):'')+'）</span>':'')+'</div>';
+    h+='<div class="l">'+fmtAccount(k,d[k])+(s?' <span style="color:#64748b">（'+escHtml(s.sheet)+'!'+escHtml(s.cell)+(s.column?'·'+escHtml(s.column):'')+(s.simple?'·简单表（未标年份）':'')+'）</span>':'')+'</div>';
   });
   if(!any)h+='<div class="l">未识别到标准科目。</div>';
   h+='</div></div></div>';
@@ -317,17 +325,34 @@ function renderEaResults(parsed,fileName,sheetCount,year){
     h+='</div>';
   }
   if(parsed.checks&&parsed.checks.length){
-    h+='<div class="card" style="margin-top:10px"><div class="hdh">🔍 跨表核对</div><table class="tbl"><tr><th>年份</th><th>科目</th><th>来源</th><th>结果</th></tr>';
+    h+='<div class="card" style="margin-top:10px"><div class="hdh">🔍 跨表核对</div><table class="tbl"><tr><th>年份</th><th>科目</th><th>来源</th><th>采用来源</th><th>结果</th></tr>';
     parsed.checks.forEach(function(c){
       c.values.forEach(function(v,i){
-        h+='<tr><td>'+(i===0?_eaYearLabel(c.year):'')+'</td><td>'+(i===0?escHtml(ACCOUNT_META[c.key]||c.key):'')+'</td><td>'+escHtml(v.src.sheet)+'!'+escHtml(v.src.cell)+'</td><td>'+(i===0?(c.ok?'✅ 一致':'⚠️ 不一致'):fmtMoney(v.value))+'</td></tr>';
+        var srcTxt=escHtml(v.src.sheet)+'!'+escHtml(v.src.cell)+(v.src.column?'·'+escHtml(v.src.column):'')+(v.src.simple?'（简单表）':'');
+        var adoptTxt=v.adopted?('✅ '+escHtml(v.src.sheet)+'!'+escHtml(v.src.cell)):'未采用';
+        h+='<tr><td>'+(i===0?_eaYearLabel(c.year):'')+'</td><td>'+(i===0?escHtml(ACCOUNT_META[c.key]||c.key):'')+'</td><td>'+srcTxt+'</td><td>'+adoptTxt+'</td><td>'+(i===0?(c.ok?'✅ 一致':'⚠️ 不一致')+(c.assumed?'（含简单表·未标年份）':''):fmtMoney(v.value))+'</td></tr>';
       });
     });
     h+='</table></div>';
   }
-  h+='<div class="card" style="margin-top:10px"><div class="hdh">🗂️ 识别到的工作表</div><table class="tbl"><tr><th>工作表</th><th>类型</th><th>年份</th><th>说明</th></tr>';
+  // 📎 未标年份的简单表：并入或未并入都必须在页面出现（不得静默丢弃）
+  if(parsed.simple&&parsed.simple.length){
+    h+='<div class="card" style="margin-top:10px"><div class="hdh">📎 未标年份的简单表</div><table class="tbl"><tr><th>工作表</th><th>识别科目</th><th>处置</th></tr>';
+    parsed.simple.forEach(function(s){
+      var accs=(s.accounts||[]).map(function(a){return escHtml(ACCOUNT_META[a.key]||a.key)+' '+fmtMoney(a.value);}).join('；');
+      var disp=s.disposition==='merged'
+        ?('已按「本期」并入 '+escHtml(String(s.year))+' 年（仅补缺，不覆盖结构化报表）')
+        :'未并入：工作簿含多个年度，年份不明';
+      h+='<tr><td>'+escHtml(s.name)+'</td><td>'+accs+'</td><td>'+disp+'</td></tr>';
+    });
+    h+='</table><div class="l">若需纳入年度分析，请在该表内或工作表名标注年份（如「2025年」）后重新拖入。</div></div>';
+  }
+  h+='<div class="card" style="margin-top:10px"><div class="hdh">🗂️ 识别到的工作表</div><table class="tbl"><tr><th>工作表</th><th>类型</th><th>年份</th><th>单位</th><th>说明</th></tr>';
   var stmtLabel={balance:'资产负债表',income:'利润表',tax:'税局比对',detail:'明细表',other:'其他'};
-  (parsed.detected||[]).forEach(function(x){h+='<tr><td>'+escHtml(x.name)+'</td><td>'+(stmtLabel[x.statement]||x.statement)+'</td><td>'+(x.year||'—')+'</td><td>'+escHtml(x.note||'')+'</td></tr>';});
+  (parsed.detected||[]).forEach(function(x){
+    var unitTxt=escHtml(x.unit||'元')+(x.unitExplicit===false?'（未标注）':'');
+    h+='<tr><td>'+escHtml(x.name)+'</td><td>'+(stmtLabel[x.statement]||x.statement)+'</td><td>'+(x.year||'—')+'</td><td>'+unitTxt+'</td><td>'+escHtml(x.note||'')+'</td></tr>';
+  });
   h+='</table></div>';
   if(parsed.warnings&&parsed.warnings.length){
     h+='<div class="res" style="margin-top:10px;border-color:#d97706;background:#fffbeb"><div class="r">⚠️ 取数边界</div>'+parsed.warnings.map(function(w){return '<div class="l">'+escHtml(w)+'</div>';}).join('')+'</div>';
