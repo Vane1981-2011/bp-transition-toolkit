@@ -352,7 +352,7 @@ function renderEaResults(parsed,fileName,sheetCount,year){
   h+='<div class="card" style="margin-top:10px"><div class="hdh">🗂️ 识别到的工作表</div><table class="tbl"><tr><th>工作表</th><th>类型</th><th>年份</th><th>单位</th><th>说明</th></tr>';
   var stmtLabel={balance:'资产负债表',income:'利润表',tax:'税局比对',detail:'明细表',other:'其他'};
   (parsed.detected||[]).forEach(function(x){
-    var unitTxt=escHtml(x.unit||'元')+(x.unitUnsupported?'（'+escHtml(x.unitUnsupported)+' 不支持，按元计）':(x.unitExplicit===false?'（未标注）':''));
+    var unitTxt=escHtml(x.unit||'元')+(x.unitUnsupported?'（'+escHtml(x.unitUnsupported)+' 不支持，按元计）':(x.unitConflict?'（多单位，按首个换算）':(x.unitExplicit===false?'（未标注）':'')));
     h+='<tr><td>'+escHtml(x.name)+'</td><td>'+(stmtLabel[x.statement]||x.statement)+'</td><td>'+(x.year||'—')+'</td><td>'+unitTxt+'</td><td>'+escHtml(x.note||'')+'</td></tr>';
   });
   h+='</table></div>';
