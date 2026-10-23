@@ -263,7 +263,7 @@ function handleDrop(e){
       if(!wb.SheetNames||!wb.SheetNames.length){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 文件无工作表</div>';return}
       var sheets=[];wb.SheetNames.forEach(function(n){sheets.push({name:n,data:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1})})});
       var parsed=parseWorkbook(sheets);
-      if(!parsed.current||(!parsed.current.revenue&&!parsed.current.totalAssets)){
+      if(!parsed.current||(parsed.current.revenue===undefined&&parsed.current.totalAssets===undefined)){
         var det=(parsed.detected||[]).map(function(x){return x.name+'('+(x.year||'—')+')';}).join(', ');
         document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#d97706;background:#fffbeb">⚠️ 未识别到可用科目（营业收入与资产总计均未取到有效值）。文件包含'+wb.SheetNames.length+'个工作表: '+escHtml(wb.SheetNames.join(', '))+'。<br>已识别: '+escHtml(det||'—')+'。<br>请确认文件包含资产负债表/利润表，或列序为「科目 | 本期 | 上期」。</div>';return;
       }
@@ -280,11 +280,12 @@ function renderEaResults(parsed,fileName,sheetCount,year){
   var d=parsed.byYear[year]||{};
   var src=parsed.sources[year]||{};
   var years=parsed.years||[];
-  var h='<div class="res"><div class="r">解析完成: '+escHtml(fileName)+'</div><div class="l">'+sheetCount+' 个工作表 | '+(years.length?years.length:0)+' 个年份 | 默认 '+_eaYearLabel(year)+'</div></div>';
+  var realYears=years.filter(function(y){return y>0;});
+  var h='<div class="res"><div class="r">解析完成: '+escHtml(fileName)+'</div><div class="l">'+sheetCount+' 个工作表 | '+(realYears.length?realYears.length+' 个年份':'本期')+' | 当前 '+_eaYearLabel(year)+'</div></div>';
   if(years.length>1){
     h+='<div class="res" style="margin:0"><label class="l">分析年份：<select id="eaYear">'+years.map(function(y){return '<option value="'+y+'"'+(y===year?' selected':'')+'>'+_eaYearLabel(y)+'</option>';}).join('')+'</select></label></div>';
   }
-  var hasBS=isFinite(d.totalAssets)&&d.totalAssets!==0&&isFinite(d.totalLiabilities);
+  var hasBS=isFinite(d.totalAssets)&&isFinite(d.totalLiabilities);
   var ratioHtml='';
   if(hasBS){
     var ratios=calcFinancialRatios({revenue:d.revenue||0,cost:d.cost||0,totalAssets:d.totalAssets,totalLiabilities:d.totalLiabilities,currentAssets:d.currentAssets||0,currentLiabilities:d.currentLiabilities||0,profit:d.profit||0,cash:d.cash||0,adminExpense:d.adminExpense||0,financeExpense:d.financeExpense||0,equity:d.equity||0,interestExpense:(d.financeExpense||0)*0.5});
