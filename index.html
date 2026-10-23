@@ -238,6 +238,8 @@ document.querySelectorAll('.nv-i').forEach(function(el){
 });
 
 // 🏢 一键分析 - Excel拖入
+var _eaParsed = null;
+function _eaYearLabel(y){ return y === 0 ? '本期' : (y + '年'); }
 function handleDrop(e){
   e.preventDefault();document.getElementById('dropzone').classList.remove('dragover');
   var file=e.dataTransfer.files[0];if(!file)return;
@@ -260,17 +262,78 @@ function handleDrop(e){
       }
       if(!wb.SheetNames||!wb.SheetNames.length){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 文件无工作表</div>';return}
       var sheets=[];wb.SheetNames.forEach(function(n){sheets.push({name:n,data:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1})})});
-      var acc=matchAccounts(sheets);
-      if(!acc.revenue&&!acc.totalAssets){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#d97706;background:#fffbeb">⚠️ 未识别到可用科目（营业收入与资产总计均未取到有效值）。文件包含'+wb.SheetNames.length+'个工作表: '+escHtml(wb.SheetNames.join(', '))+'。<br>请确认列序为「科目 | 本期 | 上期」，或文件包含资产负债表/利润表。</div>';return}
+      var parsed=parseWorkbook(sheets);
+      if(!parsed.current||(!parsed.current.revenue&&!parsed.current.totalAssets)){
+        var det=(parsed.detected||[]).map(function(x){return x.name+'('+(x.year||'—')+')';}).join(', ');
+        document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#d97706;background:#fffbeb">⚠️ 未识别到可用科目（营业收入与资产总计均未取到有效值）。文件包含'+wb.SheetNames.length+'个工作表: '+escHtml(wb.SheetNames.join(', '))+'。<br>已识别: '+escHtml(det||'—')+'。<br>请确认文件包含资产负债表/利润表，或列序为「科目 | 本期 | 上期」。</div>';return;
+      }
       try{
-        var ratios=calcFinancialRatios({revenue:acc.revenue,cost:acc.cost,totalAssets:acc.totalAssets,totalLiabilities:acc.totalLiabilities,currentAssets:acc.currentAssets,currentLiabilities:acc.currentLiabilities,profit:acc.profit,cash:acc.cash,adminExpense:acc.adminExpense,financeExpense:acc.financeExpense,equity:acc.equity,interestExpense:(acc.financeExpense||0)*0.5});
-        var h='<div class="res"><div class="r">解析完成: '+escHtml(file.name)+'</div><div class="l">'+wb.SheetNames.length+'个工作表 | 识别 '+Object.keys(acc).filter(function(k){return acc[k]}).length+' 个科目</div></div>';
-        h+='<div class="g2"><div class="card"><div class="hdh">📊 核心指标</div><div class="res" style="margin:0">'+Object.entries(ratios).filter(function(e){return e[1]!==undefined&&e[1]!==0}).map(function(e){return '<div class="l">'+fmtRatio(e[0],e[1])+'</div>'}).join('')+'</div></div><div class="card"><div class="hdh">📂 识别科目</div><div class="res" style="margin:0">'+Object.entries(acc).filter(function(e){return e[1]>0}).map(function(e){return '<div class="l">'+fmtAccount(e[0],e[1])+'</div>'}).join('')+'</div></div></div>';
-        document.getElementById('eaResults').innerHTML=h;
+        _eaParsed=parsed;
+        renderEaResults(parsed,file.name,wb.SheetNames.length,parsed.defaultYear);
       }catch(calcErr){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 计算错误: '+escHtml(calcErr.message)+'<br>科目已识别, 但计算过程中出现异常。请检查数据完整性。</div>'}
     }catch(err){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 解析失败: '+escHtml(err.message)+'<br>文件可能不是标准Excel格式或已损坏。</div>'}
   };
   reader.readAsArrayBuffer(file);
+}
+
+function renderEaResults(parsed,fileName,sheetCount,year){
+  var d=parsed.byYear[year]||{};
+  var src=parsed.sources[year]||{};
+  var years=parsed.years||[];
+  var h='<div class="res"><div class="r">解析完成: '+escHtml(fileName)+'</div><div class="l">'+sheetCount+' 个工作表 | '+(years.length?years.length:0)+' 个年份 | 默认 '+_eaYearLabel(year)+'</div></div>';
+  if(years.length>1){
+    h+='<div class="res" style="margin:0"><label class="l">分析年份：<select id="eaYear">'+years.map(function(y){return '<option value="'+y+'"'+(y===year?' selected':'')+'>'+_eaYearLabel(y)+'</option>';}).join('')+'</select></label></div>';
+  }
+  var hasBS=isFinite(d.totalAssets)&&d.totalAssets!==0&&isFinite(d.totalLiabilities);
+  var ratioHtml='';
+  if(hasBS){
+    var ratios=calcFinancialRatios({revenue:d.revenue||0,cost:d.cost||0,totalAssets:d.totalAssets,totalLiabilities:d.totalLiabilities,currentAssets:d.currentAssets||0,currentLiabilities:d.currentLiabilities||0,profit:d.profit||0,cash:d.cash||0,adminExpense:d.adminExpense||0,financeExpense:d.financeExpense||0,equity:d.equity||0,interestExpense:(d.financeExpense||0)*0.5});
+    ratioHtml=Object.entries(ratios).filter(function(e){return e[1]!==undefined&&e[1]!==0}).map(function(e){return '<div class="l">'+fmtRatio(e[0],e[1])+'</div>';}).join('');
+  }else{
+    ratioHtml='<div class="l">该年缺少资产负债表，资产负债率/ROE 等指标不可计算。</div>';
+  }
+  h+='<div class="g2"><div class="card"><div class="hdh">📊 核心指标（'+_eaYearLabel(year)+'）</div><div class="res" style="margin:0">'+ratioHtml+'</div></div><div class="card"><div class="hdh">📂 识别科目与来源</div><div class="res" style="margin:0">';
+  var any=false;
+  Object.keys(ACCOUNT_META).forEach(function(k){
+    if(d[k]===undefined||!isFinite(d[k])) return;
+    any=true;
+    var s=src[k];
+    h+='<div class="l">'+fmtAccount(k,d[k])+(s?' <span style="color:#64748b">（'+escHtml(s.sheet)+'!'+escHtml(s.cell)+(s.column?'·'+escHtml(s.column):'')+'）</span>':'')+'</div>';
+  });
+  if(!any)h+='<div class="l">未识别到标准科目。</div>';
+  h+='</div></div></div>';
+  if(years.length>1){
+    h+='<div class="card" style="margin-top:10px"><div class="hdh">📈 多年度趋势</div><table class="tbl"><tr><th>年份</th><th>营业收入</th><th>营业成本</th><th>利润</th><th>收入同比</th></tr>';
+    years.forEach(function(y,i){
+      var dd=parsed.byYear[y]||{};
+      var prev=(i+1<years.length)?(parsed.byYear[years[i+1]]||{}):null;
+      var yoy='—';
+      if(prev&&isFinite(prev.revenue)&&prev.revenue!==0&&isFinite(dd.revenue))yoy=fmtPct((dd.revenue-prev.revenue)/prev.revenue);
+      h+='<tr><td>'+_eaYearLabel(y)+'</td><td>'+(isFinite(dd.revenue)?fmtMoney(dd.revenue):'—')+'</td><td>'+(isFinite(dd.cost)?fmtMoney(dd.cost):'—')+'</td><td>'+(isFinite(dd.profit)?fmtMoney(dd.profit):'—')+'</td><td>'+yoy+'</td></tr>';
+    });
+    h+='</table>';
+    if(d.profitKind)h+='<div class="l">利润口径：'+escHtml(d.profitKind)+'</div>';
+    h+='</div>';
+  }
+  if(parsed.checks&&parsed.checks.length){
+    h+='<div class="card" style="margin-top:10px"><div class="hdh">🔍 跨表核对</div><table class="tbl"><tr><th>年份</th><th>科目</th><th>来源</th><th>结果</th></tr>';
+    parsed.checks.forEach(function(c){
+      c.values.forEach(function(v,i){
+        h+='<tr><td>'+(i===0?_eaYearLabel(c.year):'')+'</td><td>'+(i===0?escHtml(ACCOUNT_META[c.key]||c.key):'')+'</td><td>'+escHtml(v.src.sheet)+'!'+escHtml(v.src.cell)+'</td><td>'+(i===0?(c.ok?'✅ 一致':'⚠️ 不一致'):fmtMoney(v.value))+'</td></tr>';
+      });
+    });
+    h+='</table></div>';
+  }
+  h+='<div class="card" style="margin-top:10px"><div class="hdh">🗂️ 识别到的工作表</div><table class="tbl"><tr><th>工作表</th><th>类型</th><th>年份</th><th>说明</th></tr>';
+  var stmtLabel={balance:'资产负债表',income:'利润表',tax:'税局比对',detail:'明细表',other:'其他'};
+  (parsed.detected||[]).forEach(function(x){h+='<tr><td>'+escHtml(x.name)+'</td><td>'+(stmtLabel[x.statement]||x.statement)+'</td><td>'+(x.year||'—')+'</td><td>'+escHtml(x.note||'')+'</td></tr>';});
+  h+='</table></div>';
+  if(parsed.warnings&&parsed.warnings.length){
+    h+='<div class="res" style="margin-top:10px;border-color:#d97706;background:#fffbeb"><div class="r">⚠️ 取数边界</div>'+parsed.warnings.map(function(w){return '<div class="l">'+escHtml(w)+'</div>';}).join('')+'</div>';
+  }
+  document.getElementById('eaResults').innerHTML=h;
+  var sel=document.getElementById('eaYear');
+  if(sel)sel.addEventListener('change',function(){renderEaResults(parsed,fileName,sheetCount,parseInt(this.value,10));});
 }
 
 // 📊 财务比率
