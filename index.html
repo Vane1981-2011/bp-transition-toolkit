@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>默笙夏夏の知書房</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="description" content="践行者知识书房 | 每篇一个可带走的认知框架">
+<meta name="robots" content="noindex,nofollow">
+<script src="lib/xlsx.full.min.js"></script>
+<!-- Chart.js: 按需CDN加载(当前12个页面均无图表,已移除本地库以节省200KB) -->
+<!-- <script src="lib/chart.umd.min.js"></script> -->
+<script src="lib/calc.js"></script>
+<style>
+:root{--blue:#2563eb;--dark:#0f172a;--slate:#475569;--gray:#f1f5f9;--green:#059669;--red:#dc2626;--radius:12px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;background:#f0f2f5;color:#1e293b}
+.app{display:flex;min-height:100vh}
+.sb{width:200px;background:var(--dark);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;padding:12px 0}
+.sb-logo{padding:0 14px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sb-logo h1{font-size:14px;font-weight:700;color:#fff}.sb-logo .sub{font-size:8px;color:#94a3b8}
+.nv{padding:6px 6px 0;overflow-y:auto;flex:1}
+.nv-i{display:flex;align-items:center;gap:6px;padding:6px 10px;margin:1px 0;border-radius:5px;color:#94a3b8;cursor:pointer;font-size:11px;transition:all .1s}
+.nv-i:hover{background:rgba(255,255,255,.06);color:#fff}
+.nv-i.act{background:var(--blue);color:#fff;font-weight:600}
+.nv-i .ico{font-size:13px;width:18px;text-align:center}
+.nv-s{font-size:9px;color:#64748b;padding:8px 10px 4px;margin-top:6px;border-top:1px solid rgba(255,255,255,.06)}
+.main{flex:1;margin-left:200px;padding:16px 20px;min-height:100vh}
+.pg{display:none}.pg.act{display:block}
+.hd{margin-bottom:14px}.hd h2{font-size:17px;font-weight:700}.hd .sub{font-size:10px;color:var(--slate);margin-top:2px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.card{background:#fff;border-radius:var(--radius);padding:14px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
+.card .hdh{font-size:12px;font-weight:600;margin-bottom:10px;padding-bottom:5px;border-bottom:1px solid #e2e8f0}
+.btn-p{background:var(--blue);color:#fff;border:none;padding:6px 14px;border-radius:5px;cursor:pointer;font-size:11px;font-weight:500}
+.btn-p:hover{background:#1d4ed8}
+.btn-o{border:1px solid #cbd5e1;color:var(--slate);padding:5px 12px;border-radius:5px;cursor:pointer;font-size:10px;background:#fff}
+.inp-g{display:flex;align-items:center;gap:6px;margin:4px 0;flex-wrap:wrap}
+.inp-g label{font-size:10px;min-width:60px}
+input{font-family:inherit}
+input[type=number],input[type=text]{padding:4px 7px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px;width:90px}
+.res{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px;margin-top:8px}
+.res .r{font-size:16px;font-weight:700;color:var(--green)}.res .l{font-size:10px;color:var(--slate);margin-top:3px}
+pre{font-size:10px;white-space:pre-wrap;color:var(--slate);background:#f8fafc;padding:10px;border-radius:6px}
+.chkl label{display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:11px}
+.chkl input{width:12px;height:12px;accent-color:var(--blue)}
+.tag{display:inline-block;padding:1px 6px;border-radius:6px;font-size:9px;font-weight:500;margin:1px}
+.tg-g{background:#d1fae5;color:#059669}.tg-y{background:#fef3c7;color:#d97706}.tg-r{background:#fee2e2;color:#dc2626}.tg-b{background:#dbeafe;color:#1d4ed8}
+.dropzone{border:2px dashed #cbd5e1;border-radius:var(--radius);padding:32px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;margin-bottom:14px}
+.dropzone.dragover{border-color:var(--blue);background:#eff6ff}
+.dropzone p{font-size:13px;color:var(--slate)}.dropzone .big{font-size:36px;margin-bottom:8px}
+.tbl{width:100%;border-collapse:collapse;font-size:10px}.tbl th{background:#f8fafc;padding:5px 8px;text-align:left;border-bottom:1px solid #e2e8f0}.tbl td{padding:4px 8px;border-bottom:1px solid #f1f5f9}
+.aibtn{position:fixed;bottom:14px;right:14px;width:36px;height:36px;border-radius:50%;background:var(--blue);color:#fff;border:none;font-size:14px;cursor:pointer;z-index:200;box-shadow:0 3px 10px rgba(37,99,235,.3)}
+.mod{position:fixed;bottom:54px;right:14px;width:300px;max-height:400px;background:#fff;border-radius:var(--radius);box-shadow:0 4px 20px rgba(0,0,0,.12);z-index:300;display:none;flex-direction:column}
+.mod.act{display:flex}.mod-hd{padding:10px 12px;border-bottom:1px solid #e2e8f0;font-weight:600;font-size:11px;display:flex;justify-content:space-between}
+.mod-bd{padding:8px 12px;overflow-y:auto;flex:1;max-height:250px}
+.mod-ft{padding:6px 8px;border-top:1px solid #e2e8f0;display:flex;gap:5px}
+.mod-ft input{flex:1;padding:4px 7px;border:1px solid #cbd5e1;border-radius:4px;font-size:10px}
+.mod-ft button{padding:4px 10px;background:var(--blue);color:#fff;border:none;border-radius:4px;cursor:pointer;font-size:10px}
+.ai-msg{padding:5px 8px;border-radius:5px;margin-bottom:4px;font-size:10px;max-width:85%;line-height:1.4}
+.ai-msg.usr{background:var(--blue);color:#fff;margin-left:auto}.ai-msg.bot{background:#f1f5f9;color:#1e293b}
+@media(max-width:1200px){.g2{grid-template-columns:1fr}}
+@media(max-width:768px){.sb{display:none}.main{margin-left:0;padding:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="sb">
+  <div class="sb-logo"><h1>📚 默笙夏夏の知書房</h1><div class="sub">践行者知识书房 | 每篇一个可带走的认知框架</div></div>
+  <nav class="nv">
+    <div class="nv-s">🏢 企业分析</div>
+    <div class="nv-i act" data-p="ea"><span class="ico">📂</span>一键分析(拖入Excel)</div>
+    <div class="nv-i" data-p="ratio"><span class="ico">📊</span>财务比率+对标</div>
+    <div class="nv-i" data-p="check"><span class="ico">🔍</span>跨表验证</div>
+    <div class="nv-s">🔧 BP工具</div>
+    <div class="nv-i" data-p="calcp"><span class="ico">📊</span>盈利计算器</div>
+    <div class="nv-i" data-p="split"><span class="ico">🔪</span>盈利拆解器</div>
+    <div class="nv-i" data-p="roip"><span class="ico">💰</span>ROI投资测算</div>
+    <div class="nv-i" data-p="cvp"><span class="ico">📈</span>CVP本量利</div>
+    <div class="nv-i" data-p="cf"><span class="ico">💧</span>现金流预测</div>
+    <div class="nv-i" data-p="risk"><span class="ico">⚠️</span>风险评估</div>
+    <div class="nv-i" data-p="forecast"><span class="ico">🔮</span>预算预测</div>
+    <div class="nv-i" data-p="report"><span class="ico">📋</span>报告生成器</div>
+    <div class="nv-i" data-p="review"><span class="ico">✅</span>月度复盘</div>
+  </nav>
+  <div style="padding:8px 12px;border-top:1px solid rgba(255,255,255,.1);font-size:8px;color:#64748b;text-align:center">浏览器本地计算 · 支持Excel拖入</div>
+</aside>
+
+<main class="main">
+
+<!-- 🏢 1: 一键分析 -->
+<div class="pg act" id="p-ea">
+<div class="hd"><h2>🏢 一键分析</h2><div class="sub">拖入Excel/CSV → 自动解析 → 出结果</div></div>
+<div class="dropzone" id="dropzone" ondragover="event.preventDefault();this.classList.add('dragover')" ondragleave="this.classList.remove('dragover')" ondrop="handleDrop(event)">
+  <div class="big">📂</div>
+  <p>把财务报表Excel拖到此处</p>
+  <p style="font-size:10px">支持 .xlsx .xls .csv | 自动识别科目</p>
+  <p style="font-size:10px;color:#b45309">识别规则：取科目后第一列数值（本期）；0 是有效值。若你的表是「上期在前」，请先调整列序。</p>
+</div>
+<div id="eaResults"></div>
+</div>
+
+<!-- 🏢 2: 财务比率 -->
+<div class="pg" id="p-ratio">
+<div class="hd"><h2>📊 财务比率+行业对标</h2><div class="sub">自动计算关键指标 + 与行业对比</div></div>
+<div class="g2">
+  <div class="card"><div class="hdh">📥 手动输入关键财务数据</div>
+    <div class="inp-g"><label>营收(万)</label><input type=number id=raR value=10000 oninput=ra()></div>
+    <div class="inp-g"><label>成本(万)</label><input type=number id=raC value=6500 oninput=ra()></div>
+    <div class="inp-g"><label>总资产(万)</label><input type=number id=raA value=20000 oninput=ra()></div>
+    <div class="inp-g"><label>总负债(万)</label><input type=number id=raL value=10000 oninput=ra()></div>
+    <div class="inp-g"><label>净利润(万)</label><input type=number id=raP value=800 oninput=ra()></div>
+    <div class="inp-g"><label>流动资产(万)</label><input type=number id=raCa value=12000 oninput=ra()></div>
+    <div class="inp-g"><label>流动负债(万)</label><input type=number id=raCl value=8000 oninput=ra()></div>
+    <div class="inp-g"><label>行业</label><select id=raInd onchange=ra() style="padding:3px 6px;border:1px solid #cbd5e1;border-radius:4px;font-size:11px">
+      <option>制造业</option><option>科技业</option><option>零售业</option><option>建筑业</option></select></div>
+  </div>
+  <div class="card"><div class="hdh">📊 结果</div><div id=raR2></div></div>
+</div></div>
+
+<!-- 🏢 3: 跨表验证 -->
+<div class="pg" id="p-check">
+<div class="hd"><h2>🔍 跨表验证</h2><div class="sub">验证报表间勾稽关系一致性</div></div>
+<div class="g2">
+  <div class="card"><div class="hdh">📥 输入数据</div>
+    <div class="inp-g"><label>利润表营收</label><input type=number id=chPr value=10000 oninput=ch()></div>
+    <div class="inp-g"><label>明细营收合计</label><input type=number id=chDr value=10000 oninput=ch()></div>
+    <div class="inp-g"><label>利润表管理费</label><input type=number id=chPa value=800 oninput=ch()></div>
+    <div class="inp-g"><label>明细管理费合计</label><input type=number id=chDa value=800 oninput=ch()></div>
+    <div class="inp-g"><label>纳税总额</label><input type=number id=chTx value=300 oninput=ch()></div>
+  </div>
+  <div class="card"><div class="hdh">🔍 核对结果</div><div id=chR2></div></div>
+</div></div>
+
+<!-- 🔧 4-12: BP工具 (保留) -->
+<div class="pg" id="p-calcp"><div class="hd"><h2>📊 盈利计算器</h2><div class="sub">输入→净利润/毛利率/净利率</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥 输入</div>
+<div class="inp-g"><label>营收(万)</label><input type=number id=c1r value=1000 oninput=c1()></div>
+<div class="inp-g"><label>变动成本</label><input type=number id=c1v value=500 oninput=c1()></div>
+<div class="inp-g"><label>固定费用</label><input type=number id=c1f value=200 oninput=c1()></div>
+<div class="inp-g"><label>资金成本</label><input type=number id=c1c value=50 oninput=c1()></div>
+<div class="inp-g"><label>税率%</label><input type=number id=c1t value=25 oninput=c1()></div></div>
+<div class="card"><div class="hdh">📊 结果</div><div id=c1r2></div></div></div></div>
+
+<div class="pg" id="p-split"><div class="hd"><h2>🔪 盈利拆解器</h2><div class="sub">营收到净利的逐层拆解</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥</div>
+<div class="inp-g"><label>营收</label><input type=number id=spr value=10000 oninput=sp()></div>
+<div class="inp-g"><label>成本</label><input type=number id=spc value=6500 oninput=sp()></div>
+<div class="inp-g"><label>管理费</label><input type=number id=spa value=800 oninput=sp()></div>
+<div class="inp-g"><label>销售费</label><input type=number id=sps value=600 oninput=sp()></div>
+<div class="inp-g"><label>财务费</label><input type=number id=spf value=200 oninput=sp()></div>
+<div class="inp-g"><label>税金</label><input type=number id=spt value=300 oninput=sp()></div></div>
+<div class="card"><div class="hdh">拆解</div><div id=spr2></div></div></div></div>
+
+<div class="pg" id="p-roip"><div class="hd"><h2>💰 ROI测算</h2><div class="sub">NPV/回收期</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥</div>
+<div class="inp-g"><label>投资额</label><input type=number id=r1v value=1000 oninput=r1()></div>
+<div class="inp-g"><label>年收益</label><input type=number id=r1r value=300 oninput=r1()></div>
+<div class="inp-g"><label>年限</label><input type=number id=r1y value=5 oninput=r1()></div>
+<div class="inp-g"><label>折现率%</label><input type=number id=r1d value=8 oninput=r1()></div></div>
+<div class="card"><div class="hdh">评估</div><div id=r1r2></div></div></div></div>
+
+<div class="pg" id="p-cvp"><div class="hd"><h2>📈 CVP本量利</h2><div class="sub">保本点·安全边际·杠杆</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥</div>
+<div class="inp-g"><label>单价</label><input type=number id=cvpP value=100 oninput=cvp()></div>
+<div class="inp-g"><label>单位变动成本</label><input type=number id=cvpV value=60 oninput=cvp()></div>
+<div class="inp-g"><label>固定成本(万)</label><input type=number id=cvpF value=200 oninput=cvp()></div>
+<div class="inp-g"><label>预计销量</label><input type=number id=cvpS value=80000 oninput=cvp()></div>
+<div class="inp-g"><label>目标利润(万)</label><input type=number id=cvpT value=100 oninput=cvp()></div></div>
+<div class="card"><div class="hdh">结果</div><div id=cvpR></div></div></div></div>
+
+<div class="pg" id="p-cf"><div class="hd"><h2>💧 现金流预测</h2><div class="sub">余额+安全线</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥 (万/月)</div>
+<div class="inp-g"><label>期初余额</label><input type=number id=cfBal value=500 oninput=cf()></div>
+<div class="inp-g"><label>流入(逗号分隔)</label><input type=text id=cfIn value="200,220,250,260,280,300" style="width:200px" oninput=cf()></div>
+<div class="inp-g"><label>流出(逗号分隔)</label><input type=text id=cfOut value="180,190,210,230,240,250" style="width:200px" oninput=cf()></div>
+<div class="inp-g"><label>安全余额</label><input type=number id=cfSafe value=100 oninput=cf()></div></div>
+<div class="card"><div class="hdh">预测</div><div id=cfR></div></div></div></div>
+
+<div class="pg" id="p-risk"><div class="hd"><h2>⚠️ 风险评估</h2><div class="sub">5维评分</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥</div>
+<div class="inp-g"><label>资产负债率%</label><input type=number id=rk1 value=52 oninput=rk()></div>
+<div class="inp-g"><label>流动比率</label><input type=number id=rk2 value=1.8 step=.1 oninput=rk()></div>
+<div class="inp-g"><label>净利率%</label><input type=number id=rk3 value=8 oninput=rk()></div>
+<div class="inp-g"><label>ROE%</label><input type=number id=rk4 value=12 oninput=rk()></div>
+<div class="inp-g"><label>营收增长%</label><input type=number id=rk5 value=10 oninput=rk()></div></div>
+<div class="card"><div class="hdh">评估</div><div id=rkR></div></div></div></div>
+
+<div class="pg" id="p-forecast"><div class="hd"><h2>🔮 预算预测</h2><div class="sub">历史→趋势</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥 历史月数据</div>
+<div class="inp-g"><label>历史营收</label><input type=text id=fcH value="120,135,128,145,150,142" style="width:250px" oninput=fc()></div>
+<div class="inp-g"><label>增长率%</label><input type=number id=fcG value=5 oninput=fc()></div></div>
+<div class="card"><div class="hdh">预测</div><div id=fcR></div></div></div></div>
+
+<div class="pg" id="p-report"><div class="hd"><h2>📋 报告生成器</h2><div class="sub">一键生成可复制报告</div></div>
+<div class="g2"><div class="card"><div class="hdh">📥</div>
+<div class="inp-g"><label>公司</label><input type=text id=rpC value="XX科技" style="flex:1" oninput=rp()></div>
+<div class="inp-g"><label>营收</label><input type=number id=rpR value=5000 oninput=rp()></div>
+<div class="inp-g"><label>净利润</label><input type=number id=rpP value=800 oninput=rp()></div>
+<div class="inp-g"><label>毛利率%</label><input type=number id=rpM value=35 oninput=rp()></div>
+<div class="inp-g"><label>经营现金流</label><input type=number id=rpCf value=900 oninput=rp()></div></div>
+<div class="card"><div class="hdh">预览 <span style="font-weight:400;font-size:10px">(<span onclick="cpRpt()" style="color:var(--blue);cursor:pointer">📋复制</span> | <span onclick="pdfRpt()" style="color:var(--blue);cursor:pointer">📄导出PDF</span>)</span></div><pre id=rpR2></pre></div></div></div>
+
+<div class="pg" id="p-review"><div class="hd"><h2>✅ 月度复盘</h2><div class="sub">逐项检查·自动保存</div></div>
+<div class="card" style="max-width:450px"><div class="chkl" id="revChk">
+<label><input type=checkbox> 收入达成率</label>
+<label><input type=checkbox> 成本费用变动</label>
+<label><input type=checkbox> 毛利拆解</label>
+<label><input type=checkbox> 现金流健康</label>
+<label><input type=checkbox> 应收账龄</label>
+<label><input type=checkbox> 存货周转</label>
+<label><input type=checkbox> 预算偏差</label>
+<label><input type=checkbox> 风险扫描</label>
+<label><input type=checkbox> 改善方案跟踪</label>
+</div><div style="margin-top:8px;display:flex;gap:6px;align-items:center">
+<button class="btn-p" onclick="svChk()">💾 保存</button>
+<button class="btn-o" onclick="rsChk()">🔄 重置</button><span id=chkStat style="font-size:10px;color:var(--slate)"></span></div></div></div>
+
+</main></div>
+
+<button class="aibtn" onclick="tAI()">💡</button>
+<div class="mod" id="aiP">
+<div class="mod-hd"><span>💡 AI助手</span><span onclick="tAI()" style="cursor:pointer">✕</span></div>
+<div class="mod-bd" id="aiM"><div class="ai-msg bot">您好！描述您遇到的财务问题，我帮您分析。</div></div>
+<div class="mod-ft"><input id="aiI" placeholder="输入..." onkeydown="if(event.key==='Enter')aAI()"><button onclick="aAI()">发送</button></div></div>
+
+<script>
+// 导航
+document.querySelectorAll('.nv-i').forEach(function(e){e.addEventListener('click',function(){
+  document.querySelectorAll('.nv-i').forEach(function(x){x.classList.remove('act')});
+  this.classList.add('act');
+  document.querySelectorAll('.pg').forEach(function(x){x.classList.remove('act')});
+  document.getElementById('p-'+this.dataset.p).classList.add('act');
+})});
+// 键盘可访问：导航项可用 Tab 聚焦、Enter/Space 激活
+document.querySelectorAll('.nv-i').forEach(function(el){
+  el.setAttribute('role','button');el.tabIndex=0;
+  el.addEventListener('keydown',function(ev){if(ev.key==='Enter'||ev.key===' '){ev.preventDefault();this.click();}});
+});
+
+// 🏢 一键分析 - Excel拖入
+function handleDrop(e){
+  e.preventDefault();document.getElementById('dropzone').classList.remove('dragover');
+  var file=e.dataTransfer.files[0];if(!file)return;
+  var dot=file.name.lastIndexOf('.');
+  var ext=dot>=0?file.name.slice(dot+1).toLowerCase():'';
+  if(!['xlsx','xls','csv'].includes(ext)){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">⚠️ 不支持的文件格式(.'+escHtml(ext)+'), 请拖入.xlsx/.xls/.csv文件</div>';return}
+  // 文件大小限制(50MB)
+  if(file.size > 50*1024*1024){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">⚠️ 文件过大('+(file.size/1024/1024).toFixed(1)+'MB), 请使用<50MB的文件</div>';return}
+  document.getElementById('eaResults').innerHTML='<div class="res">⏳ 正在解析 '+escHtml(file.name)+' ('+(file.size/1024).toFixed(0)+'KB)...</div>';
+  var reader=new FileReader();
+  reader.onerror=function(){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 文件读取失败, 请检查文件是否损坏</div>'};
+  reader.onload=function(e){
+    try{
+      var data=new Uint8Array(e.target.result);
+      var wb;
+      if(ext==='csv'){
+        wb=XLSX.read(decodeCsvBytes(data),{type:'string'});
+      }else{
+        wb=XLSX.read(data,{type:'array'});
+      }
+      if(!wb.SheetNames||!wb.SheetNames.length){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 文件无工作表</div>';return}
+      var sheets=[];wb.SheetNames.forEach(function(n){sheets.push({name:n,data:XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1})})});
+      var acc=matchAccounts(sheets);
+      if(!acc.revenue&&!acc.totalAssets){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#d97706;background:#fffbeb">⚠️ 未识别到可用科目（营业收入与资产总计均未取到有效值）。文件包含'+wb.SheetNames.length+'个工作表: '+escHtml(wb.SheetNames.join(', '))+'。<br>请确认列序为「科目 | 本期 | 上期」，或文件包含资产负债表/利润表。</div>';return}
+      try{
+        var ratios=calcFinancialRatios({revenue:acc.revenue,cost:acc.cost,totalAssets:acc.totalAssets,totalLiabilities:acc.totalLiabilities,currentAssets:acc.currentAssets,currentLiabilities:acc.currentLiabilities,profit:acc.profit,cash:acc.cash,adminExpense:acc.adminExpense,financeExpense:acc.financeExpense,equity:acc.equity,interestExpense:(acc.financeExpense||0)*0.5});
+        var h='<div class="res"><div class="r">解析完成: '+escHtml(file.name)+'</div><div class="l">'+wb.SheetNames.length+'个工作表 | 识别 '+Object.keys(acc).filter(function(k){return acc[k]}).length+' 个科目</div></div>';
+        h+='<div class="g2"><div class="card"><div class="hdh">📊 核心指标</div><div class="res" style="margin:0">'+Object.entries(ratios).filter(function(e){return e[1]!==undefined&&e[1]!==0}).map(function(e){return '<div class="l">'+fmtRatio(e[0],e[1])+'</div>'}).join('')+'</div></div><div class="card"><div class="hdh">📂 识别科目</div><div class="res" style="margin:0">'+Object.entries(acc).filter(function(e){return e[1]>0}).map(function(e){return '<div class="l">'+fmtAccount(e[0],e[1])+'</div>'}).join('')+'</div></div></div>';
+        document.getElementById('eaResults').innerHTML=h;
+      }catch(calcErr){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 计算错误: '+escHtml(calcErr.message)+'<br>科目已识别, 但计算过程中出现异常。请检查数据完整性。</div>'}
+    }catch(err){document.getElementById('eaResults').innerHTML='<div class="res" style="border-color:#dc2626;background:#fef2f2">❌ 解析失败: '+escHtml(err.message)+'<br>文件可能不是标准Excel格式或已损坏。</div>'}
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// 📊 财务比率
+function ra(){
+  var bs={revenue:1e4*(+raR.value||0),cost:1e4*(+raC.value||0),totalAssets:1e4*(+raA.value||0),totalLiabilities:1e4*(+raL.value||0),
+    profit:1e4*(+raP.value||0),currentAssets:1e4*(+raCa.value||0),currentLiabilities:1e4*(+raCl.value||0),equity:1e4*(+raA.value||0)-1e4*(+raL.value||0),interestExpense:0};
+  var r=calcFinancialRatios(bs);var d=calcDuPont(bs);var bm=calcBenchmark(r,raInd.value);
+  var c=r.debtRatio>70?'#dc2626':r.debtRatio>50?'#d97706':'#059669';
+  document.getElementById('raR2').innerHTML=
+    '<div class="res" style="margin:0"><div class="r" style="color:'+c+'">资产负债率: '+r.debtRatio.toFixed(1)+'%</div>'+
+    '<div class="l">流动比率: '+r.currentRatio.toFixed(2)+' | 净利率: '+r.netMargin.toFixed(1)+'% | ROE: '+r.roe.toFixed(1)+'%</div>'+
+    '<div class="l">毛利率: '+r.grossMargin.toFixed(1)+'% | 资产周转率: '+r.assetTurnover.toFixed(2)+'次 | 权益乘数: '+(bs.equity?bs.totalAssets/bs.equity:0).toFixed(2)+'</div>'+
+    '<div class="l" style="border-top:1px solid #bbf7d0;margin-top:6px;padding-top:6px"><b>杜邦分析</b>: ROE='+d.detail+'</div></div>'+
+    '<div class="card" style="margin-top:10px"><div class="hdh">🏭 行业对标('+raInd.value+')</div>'+
+    '<table class="tbl"><tr><th>指标</th><th>公司</th><th>行业</th><th>判断</th></tr>'+
+    bm.list.map(function(i){return '<tr><td>'+i.name+'</td><td>'+i.company.toFixed(1)+i.unit+'</td><td>'+i.bmk.toFixed(1)+i.unit+'</td><td><span class="tag '+(i.grade.includes('优于')?'tg-g':i.grade.includes('持平')?'tg-y':'tg-r')+'">'+i.grade+'</span></td></tr>'}).join('')+
+    '</table></div>';
+}
+
+// 🔍 跨表验证
+function ch(){
+  var d={pl:{revenue:+chPr.value||0,adminExpense:+chPa.value||0},detail:{revenue:+chDr.value||0,adminDetail:+chDa.value||0},tax:{total:+chTx.value||0}};
+  var r=validateSheets(d);
+  document.getElementById('chR2').innerHTML=
+    '<div class="res" style="margin:0"><div class="l">通过率: '+r.pass.toFixed(0)+'% ('+r.checks.filter(function(x){return x.s.includes('✅')}).length+'/'+r.checks.length+')</div>'+
+    r.checks.map(function(c){return '<div class="l">'+c.id+' '+c.n+': '+c.s+(c.diff?' 差异'+c.diff.toFixed(0):'')+(c.v?' 税额'+c.v.toFixed(0):'')+'</div>'}).join('')+
+    '</div>';
+}
+
+// 🔧 BP工具函数
+function c1(){var r=calcProfit({revenue:1e4*(+c1r.value||0),variableCost:1e4*(+c1v.value||0),fixedCost:1e4*(+c1f.value||0),capitalCost:1e4*(+c1c.value||0),taxRate:+c1t.value||25});var c=r.netProfit>0?'#059669':'#dc2626';
+c1r2.innerHTML='<div class="res"><div class="r" style="color:'+c+'">净利润: '+fmtMoney(r.netProfit,'万')+'</div><div class="l">毛利'+fmtMoney(r.grossProfit,'万')+'('+fmtPct(r.grossMargin)+') 净利率'+fmtPct(r.netMargin)+'</div></div>';}
+function sp(){var r=+spr.value||0,c=+spc.value||0,a=+spa.value||0,s=+sps.value||0,f=+spf.value||0,t=+spt.value||0,g=r-c,n=g-a-s-f-t;
+spr2.innerHTML='<div class="res"><div>营收'+fmtMoney(r*1e4,'万')+'</div><div>➖成本'+fmtMoney(c*1e4,'万')+' → 毛利'+fmtMoney(g*1e4,'万')+'('+(r?(g/r*100).toFixed(1):0)+'%)</div><div>➖管理'+fmtMoney(a*1e4,'万')+'|销售'+fmtMoney(s*1e4,'万')+'|财务'+fmtMoney(f*1e4,'万')+'|税'+fmtMoney(t*1e4,'万')+'</div><div class="r" style="'+(n>0?'color:#059669':'color:#dc2626')+'">净利润: '+fmtMoney(n*1e4,'万')+'</div></div>';}
+function r1(){var r=calcROI({investment:1e4*(+r1v.value||0),annualReturn:1e4*(+r1r.value||0),years:+r1y.value||5,discountRate:(+r1d.value||8)/100});var c=r.npv>0?'#059669':'#dc2626';
+r1r2.innerHTML='<div class="res"><div class="r" style="color:'+c+'">'+r.assessment+'</div><div class="l">ROI '+r.roi.toFixed(1)+'% | NPV '+fmtMoney(r.npv,'万')+' | 回收期'+(isFinite(r.payback)?r.payback.toFixed(1):'—')+'年</div></div>';}
+function cvp(){var r=calcCVP({unitPrice:+cvpP.value||0,unitVariable:+cvpV.value||0,fixedCost:1e4*(+cvpF.value||0),salesVolume:+cvpS.value||0,targetProfit:1e4*(+cvpT.value||0)});
+cvpR.innerHTML='<div class="res"><div>保本量<b>'+r.bepUnits.toLocaleString()+'</b>件 保本额<b>'+fmtMoney(r.bepRevenue,'万')+'</b></div><div class="l">安全边际率'+r.safetyMarginRate.toFixed(1)+'% ('+r.assessment+') | DOL='+r.dol.toFixed(1)+'</div></div>';}
+function cf(){var bal=1e4*(+cfBal.value||0);var sin=(cfIn.value||'').split(',').map(function(x){return 1e4*+x});var sout=(cfOut.value||'').split(',').map(function(x){return 1e4*+x});var safe=1e4*(+cfSafe.value||0);if(!sin.length||!sout.length)return;
+var r=calcCashFlow({initialBalance:bal,monthlyInflows:sin,monthlyOutflows:sout,minBalance:safe});
+cfR.innerHTML='<div class="res"><div class="r">期末'+fmtMoney(r.finalBalance,'万')+'</div><div class="l">最低'+fmtMoney(r.minBalance,'万')+'| 预警'+r.dangerMonths+'/'+sin.length+'月 | 覆盖'+r.daysCoverage+'天'+(r.isSafe?' ✅安全':'🔴危险')+'</div></div>';}
+function rk(){var r=calcRiskScore({debtRatio:+rk1.value||0,currentRatio:+rk2.value||0,netMargin:+rk3.value||0,roe:+rk4.value||0,revenueGrowth:+rk5.value||0});
+rkR.innerHTML='<div class="res"><div class="r" style="color:'+(r.composite>=85?'#059669':r.composite>=70?'#d97706':'#dc2626')+'">'+r.composite+'/100 '+r.level+'</div><div class="l">'+(r.riskFactors.length?'风险因子: '+r.riskFactors.join(', '):'无显著')+'</div></div>';}
+function fc(){var h=(fcH.value||'').split(',').map(Number).filter(function(x){return x>0});var g=+fcG.value||0;if(h.length<2)return;
+var r=calcBudgetForecast(h,g);if(r.error)return;
+fcR.innerHTML='<div class="res"><div>'+r.direction+' | 月均'+fmtMoney(r.avgMonthly*1e4,'万')+' | 斜率'+(r.trend>0?'+':'')+r.trend+'</div><div class="l">下月预测'+fmtMoney(r.forecast[0]*1e4,'万')+' | 差异'+(r.variance>0?'+':'')+r.varianceRate+'%</div><div class="l">建议:'+r.recommendation+'</div></div>';}
+function rp(){var c=rpC.value||'XX科技',r=+rpR.value||0,p=+rpP.value||0,m=+rpM.value||0,cf=+rpCf.value||0;
+rpR2.textContent='━━━ 经营分析报告 ━━━\n'+c+' | '+new Date().toLocaleDateString()+' | 财务BP部\n\n一、核心指标\n营收: '+fmtMoney(r*1e4,'万')+'\n净利润: '+fmtMoney(p*1e4,'万')+'\n毛利率: '+m+'%\n\n二、分析\n· 毛利率'+(m>30?' 良好':' 需关注')+'\n\n三、建议\n· '+(m<15?'优化产品结构':'稳定运营')+'\n\n━━━━━━━━━━━━━━━\n';}
+function cpRpt(){var t=rpR2.textContent;function fallback(){var ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();var ok=false;try{ok=document.execCommand('copy')}catch(e){}document.body.removeChild(ta);alert(ok?'✅ 已复制':'❌ 复制失败，请手动选择文本')}if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(function(){alert('✅ 已复制')},fallback)}else{fallback()}}
+function pdfRpt(){var w=window.open('','_blank');if(!w){alert('浏览器拦截了弹出窗口，请允许后重试');return}var t=rpR2.textContent;w.document.write('<html><head><meta charset=utf-8><style>body{font-family:SimSun,serif;padding:40px;font-size:14px;line-height:2}pre{white-space:pre-wrap}</style></head><body><pre>'+escHtml(t)+'</pre><script>window.onload=function(){window.print();}<'+'/script></body></html>');w.document.close()}
+function svChk(){var s=[];document.querySelectorAll('#revChk input').forEach(function(c,i){if(c.checked)s.push(i)});localStorage.setItem('bp_chk3',JSON.stringify(s));upSt()}
+function rsChk(){document.querySelectorAll('#revChk input').forEach(function(c){c.checked=false});localStorage.removeItem('bp_chk3');upSt()}
+function upSt(){var c=document.querySelectorAll('#revChk input:checked').length,t=document.querySelectorAll('#revChk input').length;document.getElementById('chkStat').textContent=c+'/'+t+' ('+Math.round(c/t*100)+'%)';}
+(function(){var s=localStorage.getItem('bp_chk3');if(s){JSON.parse(s).forEach(function(i){var c=document.querySelectorAll('#revChk input');if(c[i])c[i].checked=true})}upSt()})();
+function tAI(){document.getElementById('aiP').classList.toggle('act');if(document.getElementById('aiP').classList.contains('act'))document.getElementById('aiI').focus()}
+function aAI(){var q=document.getElementById('aiI').value.trim();if(!q)return;document.getElementById('aiM').innerHTML+='<div class="ai-msg usr">'+escHtml(q)+'</div>';document.getElementById('aiI').value='';
+var a=AI_RESPONSES.default;for(var k in AI_RESPONSES){if(k!=='default'&&q.includes(k)){a=AI_RESPONSES[k];break}}setTimeout(function(){document.getElementById('aiM').innerHTML+='<div class="ai-msg bot">'+escHtml(a)+'</div>';document.getElementById('aiM').scrollTop=document.getElementById('aiM').scrollHeight},300)}
+// file:// 下浏览器会以 CORS 拒绝读取 manifest；仅在 HTTP(S) 下注册 PWA
+if(location.protocol!=='file:'&&!document.querySelector('link[rel="manifest"]')){
+  var mf=document.createElement('link');mf.rel='manifest';mf.href='manifest.json';document.head.appendChild(mf);
+}
+c1();sp();r1();cvp();cf();rk();fc();rp();ra();ch();
+</script></body></html>
