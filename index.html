@@ -289,7 +289,7 @@ function renderEaResults(parsed,fileName,sheetCount,year){
   var ui=parsed.unitInfo;
   if(ui&&(ui.mixed||(ui.units||[]).some(function(u){return u!=='元';}))){
     var uParts=(ui.used&&ui.used.length?ui.used:ui.sheets||[]).map(function(x){
-      return escHtml(x.name)+'= '+escHtml(x.unit)+(x.explicit===false?'（未标注）':'');
+      return escHtml(x.name)+'= '+escHtml(x.unit)+(x.unsupported?'（'+escHtml(x.unsupported)+' 不支持，按元计）':(x.explicit===false?'（未标注）':''));
     }).join('；');
     h+='<div class="res" style="margin:0;border-color:#93c5fd;background:#eff6ff"><div class="r" style="font-size:12px">💱 已统一换算为元</div><div class="l">'+uParts+'</div><div class="l">换算口径：万元 × 10000、千元 × 1000；表内未标注单位时按元计。</div></div>';
   }
@@ -307,7 +307,7 @@ function renderEaResults(parsed,fileName,sheetCount,year){
     if(d[k]===undefined||!isFinite(d[k])) return;
     any=true;
     var s=src[k];
-    h+='<div class="l">'+fmtAccount(k,d[k])+(s?' <span style="color:#64748b">（'+escHtml(s.sheet)+'!'+escHtml(s.cell)+(s.column?'·'+escHtml(s.column):'')+(s.simple?'·简单表（未标年份）':'')+'）</span>':'')+'</div>';
+    h+='<div class="l">'+fmtAccount(k,d[k])+(s?' <span style="color:#64748b">（'+escHtml(s.sheet)+'!'+escHtml(s.cell)+(s.column?'·'+escHtml(s.column):'')+(s.simple?(s.assumed?'·简单表（未标年份）':'·简单表（标注年份）'):'')+'）</span>':'')+'</div>';
   });
   if(!any)h+='<div class="l">未识别到标准科目。</div>';
   h+='</div></div></div>';
@@ -337,7 +337,7 @@ function renderEaResults(parsed,fileName,sheetCount,year){
   }
   // 📎 未标年份的简单表：并入或未并入都必须在页面出现（不得静默丢弃）
   if(parsed.simple&&parsed.simple.length){
-    h+='<div class="card" style="margin-top:10px"><div class="hdh">📎 未标年份的简单表</div><table class="tbl"><tr><th>工作表</th><th>识别科目</th><th>处置</th></tr>';
+    h+='<div class="card" style="margin-top:10px"><div class="hdh">📎 简单表（含未标年份）</div><table class="tbl"><tr><th>工作表</th><th>识别科目</th><th>处置</th></tr>';
     parsed.simple.forEach(function(s){
       var accs=(s.accounts||[]).map(function(a){return escHtml(ACCOUNT_META[a.key]||a.key)+' '+fmtMoney(a.value);}).join('；');
       var disp=s.disposition==='merged'
